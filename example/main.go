@@ -3,9 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/beefsack/termui-rich-widget"
+	".."
 	"github.com/gizak/termui"
-	"github.com/nsf/termbox-go"
 )
 
 func main() {
@@ -14,27 +13,42 @@ func main() {
 	}
 	defer termui.Close()
 
-	r := rich.New()
-	r.X = 1
-	r.Y = 1
-	r.Width = 50
-	r.Height = 5
+	w := rich.New()
 
-	// rich can update it's own content (handling input and cursor blinking) so
-	// registering a dirty handler lets us render when it changes.
-	r.AddDirtyHandler(func() {
-		termui.Render(r)
+	w.X = 1
+	w.Y = 1
+	w.Resize(50, 3)
+
+	termui.Handle("/sys/kbd", func(e termui.Event) {
+		key := e.Data.(termui.EvtKbd)
+
+		switch key.KeyStr {
+		case "<left>":
+			w.MoveCursor(-1)
+		case "<right>":
+			w.MoveCursor(1)
+		case "<home>":
+			// Start of line
+		case "<end>":
+			// End of line
+		case "<up>":
+			// Up one line
+		case "<down>":
+			// Down one line
+		case "<delete>":
+			w.Delete(1)
+		case "<backspace>":
+			w.Delete(-1)
+		case "<enter>":
+			w.WriteChar('\n')
+		case "<space>":
+			w.WriteChar(' ')
+		case "C-q":
+			termui.StopLoop()
+		default:
+			w.WriteChar(rune(key.KeyStr[0]))
+		}
 	})
 
-	r.CursorShow()
-
-	handler := rich.NewStandardInput(r)
-	for {
-		evt := termbox.PollEvent()
-		if evt.Type == termbox.EventKey && evt.Key == termbox.KeyEsc {
-			log.Println(r)
-			break
-		}
-		handler.HandleEvent(evt)
-	}
+	termui.Loop()
 }
